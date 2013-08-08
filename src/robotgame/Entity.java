@@ -31,6 +31,11 @@ public class Entity {
         spriteHeight = sh;
     }
     
+    public boolean isInTile(int x, int y, int z)
+    {
+        return ((int)xpos == x && (int)ypos == y && (int)zpos == z);
+    }
+    
     public int getCamDistance()
     {
         return  (int)( Math.floor(xpos) - Math.floor(ypos));

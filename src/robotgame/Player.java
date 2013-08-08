@@ -104,8 +104,9 @@ public class Player {
         zpos += zvel * time;
         //Misc.prln(String.valueOf(xpos) + ' ' + String.valueOf(ypos) + ' ' + String.valueOf(zpos));
         
-        
-        if(zpos < w.xyz[2] && w.tiles[(int)xpos][(int)ypos][(int)zpos].type != 0)
+        if(zpos < 0)
+            zpos = 0;
+        else if(zpos < w.xyz[2] && w.tiles[(int)xpos][(int)ypos][(int)zpos].type != 0)
         {
             zvel = 0;
             zpos = (float)Math.floor(zpos + 1);

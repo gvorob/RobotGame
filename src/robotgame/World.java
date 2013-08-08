@@ -31,8 +31,8 @@ public class World {
     public int mode;
     int[] xyz;//holds the map size
     
-    public final int viewX = 100;
-    public final int viewY = 200;
+    public int viewX = 250;
+    public int viewY = 250;
     
     private int editx,edity,editz;
     private Tile editTile,editAlt;//editAlt is the tile currently under the cursor, used for swapping-out reasons
@@ -191,23 +191,32 @@ public class World {
         
         entities = new ArrayList<Entity>();
         if(mode == MODE_PLAY)
-            entities.add(player.draw());
+        {
+            Entity temp = player.draw();
+            entities.add(temp);
+            int xcor = (int)(temp.refx + 16 * temp.xpos + 16 * temp.ypos);
+            int ycor = (int)(temp.refy + (8 * temp.xpos) + (-8 * temp.ypos) + (-16 * temp.zpos));
+            viewX = 250 - xcor; 
+            viewY = 250 - ycor;
+        }
+            
         if(mode == MODE_EDITOR)
         {
             editAlt = tiles[editx][edity][editz];
             tiles[editx][edity][editz] = editTile;
         }
         
-        for(int z = 0; z < xyz[2];z++)
+        
+        int staggerHeight = xyz[0] + xyz[1] - 1;
+        int x = 0;
+        int y = xyz[1] - 1;
+        for(int i = 1; i <= staggerHeight;i++)
         {
-            int staggerHeight = xyz[0] + xyz[1] - 1;
-            int x = 0;
-            int y = xyz[1] - 1;
-            for(int i = 1; i <= staggerHeight;i++)
+            int diff = staggerHeight-i + 1;
+            int staggerWidth = diff>=i?i:diff;
+            for(int j = 0; j < staggerWidth;j++)
             {
-                int diff = staggerHeight-i + 1;
-                int staggerWidth = diff>=i?i:diff;
-                for(int j = 0; j < staggerWidth;j++)
+                for(int z = 0; z < xyz[2];z++)
                 {
                     int ax = x + j;
                     int ay = y + j; 
@@ -217,17 +226,17 @@ public class World {
                     int ycor = viewY + -55 + (8 * ax) + (-8 * ay) + (-16 * z);
                     int tileSprite = tiles[ax][ay][z].sprite;
                     g.drawImage(sprites[0],  xcor, ycor, xcor + 32, ycor + 64,tileSprite * 32, 0, tileSprite * 32 + 32, 64, null);
-
                 }
-                
-                drawEntities(z, x - y,g);//draws all entities at z-level z, x-y defines the depth so it occludes each other
-                
-                if(y > 0)
-                    y--;
-                else
-                    x++;
 
             }
+
+            drawEntities( x - y,g);//draws all entities at z-level z, x-y defines the depth so it occludes each other
+
+            if(y > 0)
+                y--;
+            else
+                x++;
+
         }
         
         if(mode == MODE_EDITOR)
@@ -239,14 +248,14 @@ public class World {
         }
     }
     
-    private void drawEntities(int z, int camDistance, Graphics2D g)//camdistance is the distance from the top-left of the grid, given by x - y
+    private void drawEntities(int camDistance, Graphics2D g)//camdistance is the distance from the top-left of the grid, given by x - y
     {
         Iterator<Entity> i = entities.iterator();
         while(i.hasNext())
         {
             Entity current = i.next();
             
-            if(z == Math.floor(current.zpos) && camDistance == current.getCamDistance())
+            if(camDistance == current.getCamDistance())
             {
                 //Misc.prln("--" + String.valueOf(current.getCamDistance()) + "--");
                 int xcor = (int)(viewX - current.refx + 16 * current.xpos + 16 * current.ypos);
