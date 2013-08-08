@@ -62,15 +62,21 @@ public class World {
             {
                 xyz[i] = Integer.parseInt(params[i]);//parse map size to ints
             }
-            
-            input = new String[xyz[2]];//Array to hold each line of input, which will correspond to one xy slice
-            
-            for(int i = 0;i < xyz[2]; i++)
+            if(params.length == 3)//Adding an extra comma makes it generate a blank map of the specified size
             {
-                input[i] = b.readLine();
-            }
+                input = new String[xyz[2]];//Array to hold each line of input, which will correspond to one xy slice
             
-            parseTiles(input);
+                for(int i = 0;i < xyz[2]; i++)
+                {
+                    input[i] = b.readLine();
+                }
+            
+                parseTiles(input);
+            }
+            else
+            {
+                genBlankMap();
+            }
             
         }
         catch(Exception ex)
@@ -107,6 +113,21 @@ public class World {
         }
     }
     
+    private void genBlankMap()
+    {
+        tiles = new Tile[xyz[0]][xyz[1]][xyz[2]];//create an int[][][] with size specified in xyz
+        for(int iz = 0;iz < xyz[2];iz++)
+        {
+            for(int iy = 0;iy < xyz[1];iy++)
+            {
+                for(int ix = 0;ix < xyz[0];ix++)
+                {
+                    tiles[ix][iy][iz] = new Tile(0,0);    
+                }
+            }
+        }
+    }
+    
     public void update(float time, Keyboard keys)//per-frame game updates
     {
         if(mode == MODE_PLAY)
@@ -117,6 +138,8 @@ public class World {
         }
         else if(mode == MODE_EDITOR)
         {
+            if(keys.getKeyPressed(KeyEvent.VK_F2))
+                saveLevel();
             if(keys.getKeyPressed(KeyEvent.VK_SPACE))
                 tiles[editx][edity][editz] = editTile.clone();
             
@@ -231,6 +254,36 @@ public class World {
                 int tileCor = current.spriteid * current.spriteWidth;
                 g.drawImage(sprites[current.spritesheet],  xcor, ycor, xcor + current.spriteWidth, ycor + current.spriteHeight, tileCor, 0, tileCor + current.spriteWidth, current.spriteHeight, null);
                 
+            }
+        }
+    }
+    
+    public void saveLevel()//the opposite of parsetiles
+    {
+        BufferedWriter out = null;
+        try //the opposite of parsetiles
+        {
+            out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("level-out.lvl")));
+            out.write(String.valueOf(xyz[0]) + ',' + String.valueOf(xyz[1]) + ',' + String.valueOf(xyz[2]) + '\n');
+            for(int iz = 0;iz < xyz[2];iz++)
+            {
+                for(int iy = 0;iy < xyz[1];iy++)
+                {
+                    for(int ix = 0;ix < xyz[0];ix++)
+                    {
+                        out.write(tiles[ix][iy][iz].sprite);
+                        out.write(tiles[ix][iy][iz].type);
+                    }
+                }
+                out.write('\n');
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(World.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                out.close();
+            } catch (IOException ex) {
+                Logger.getLogger(World.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
