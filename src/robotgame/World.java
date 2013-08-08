@@ -8,24 +8,34 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import sun.util.BuddhistCalendar;
 
 /**
  *
  * @author George Vorobyev <quaffle97@gmail.com>
  */
 public class World {
-    public BufferedImage sprites;
+    public BufferedImage[] sprites;
+    public ArrayList<Entity> entities;
+    public Player player;
     public int[][][] tiles;//x,y,z
     int[] xyz;//holds the map size
+    
+    public final int viewX = 100;
+    public final int viewY = 200;
     
     public World(String fileName)
     {
         String[] input;//holds lines of tile data, each line is one xy slice
         try {
-            sprites = ImageIO.read(new File("tiles.png"));
+            sprites = new BufferedImage[2];
+            sprites[0] = ImageIO.read(new File("tiles.png"));
+            sprites[1] = ImageIO.read(new File("entities.png"));
         } catch (IOException ex) {
             Logger.getLogger(World.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -63,6 +73,15 @@ public class World {
                 Logger.getLogger(World.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        
+        entities = new ArrayList<>();
+        player = new Player(2.5f, 2.5f, 1);
+        
+    }
+    
+    public void update(float time, Keyboard keys)
+    {
+        player.update(time, keys, this);
     }
     
     private void parseTiles(String[] input)
@@ -84,6 +103,7 @@ public class World {
     
     public void draw(BufferedImage b)
     {
+        entities.add(player.draw());
         Graphics2D g = b.createGraphics();
         //g.setColor(Color.red);
         //g.drawRect(0, 0, 10, 10);
@@ -105,15 +125,15 @@ public class World {
                     int ay = Math.abs(y) + j; 
                     //Misc.prln(String.valueOf(ax) + ' ' + String.valueOf(ay));
 
-                    int xcor = 60 + 16 * ax + 16 * ay;
-                    int ycor = 60 + (8 * ax) + (-8 * ay) + (-16 * z);
+                    int xcor = viewX + 0 + 16 * ax + 16 * ay;
+                    int ycor = viewY + -55 + (8 * ax) + (-8 * ay) + (-16 * z);
                     int tileId = tiles[ax][ay][z];
-                    //if(tiles[ax][ay][z] != 1)
-                    g.drawImage(sprites,  xcor, ycor, xcor + 32, ycor + 64,tileId * 32, 0, tileId * 32 + 32, 64, null);
-                    //else if(tiles[ax][ay][z] == 0)
-                    //g.drawImage(sprites,  xcor, ycor, xcor + 32, ycor + 64,0, 0, 32, 64, null);
+                    g.drawImage(sprites[0],  xcor, ycor, xcor + 32, ycor + 64,tileId * 32, 0, tileId * 32 + 32, 64, null);
 
                 }
+                
+                //drawEntities(z,i,g);//draws all entities at z-level z, height i from top of screen
+                
                 if(y != 0)
                     y--;
                 else
@@ -121,12 +141,25 @@ public class World {
 
             }
         }
-        /*for(int x = 0; x < xyz[0];x++)
+        drawEntities(g);//z,i,g);//draws all entities at z-level z, height i from top of screen
+    }
+    
+    private void drawEntities(Graphics2D g)//int depth, int scrHeight, Graphics2D g)//scrHeight is the distance from the top-left of the grid
+    {
+        Iterator<Entity> i = entities.iterator();
+        while(i.hasNext())
         {
-            for(int y=0; y < xyz[1];y++)
+            Entity current = i.next();
+            
+            if(true)//Math.floor(current.zpos) == depth)
             {
+                int xcor = (int)(viewX - current.refx + 16 * current.xpos + 16 * current.ypos);
+                int ycor = (int)(viewY - current.refy + (8 * current.xpos) + (-8 * current.ypos) + (-16 * current.zpos));
+                int tileCor = current.spriteid * current.spriteWidth;
+                //if(tiles[ax][ay][z] != 1)
+                g.drawImage(sprites[current.spritesheet],  xcor, ycor, xcor + current.spriteWidth, ycor + current.spriteHeight, tileCor, 0, tileCor + current.spriteWidth, current.spriteHeight, null);
                 
             }
-        }*/
+        }
     }
 }
