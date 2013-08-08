@@ -30,4 +30,9 @@ public class Entity {
         spriteWidth = sw;
         spriteHeight = sh;
     }
+    
+    public int getCamDistance()
+    {
+        return  (int)( Math.floor(xpos) - Math.floor(ypos));
+    }
 }
