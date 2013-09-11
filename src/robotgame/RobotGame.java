@@ -42,7 +42,7 @@ public class RobotGame implements TimerListener, KeyEventListener, MouseEventLis
     @Override
     public void timerEvent() {
         screen.clear();
-        world.update((float)timer.interval /1000, keys);
+        world.update((float)timer.interval /1000, keys, mouse);
         world.draw(screen.buffer);
         screen.flushBuffer();
     }

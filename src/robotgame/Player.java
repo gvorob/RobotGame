@@ -6,13 +6,14 @@ package robotgame;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 
 /**
  *
  * @author George Vorobyev <quaffle97@gmail.com>
  */
 public class Player {
-    final float gravity = -3;
+    final float gravity = -8;
     float anim;
     float speed;
     float jspeed;
@@ -21,18 +22,23 @@ public class Player {
     float ypos;
     float zpos;
     
-    Entity sprite;
+    Entity sprite, shadow;
+    ArrayList<Entity> spriteArray;
     
     public Player(float x, float y, float z)
     {
-        speed = 1;//block/second
-        jspeed = 3;
+        speed = 3;//block/second
+        jspeed = 5;
         zvel = 0;
         xpos = x;
         ypos = y;
         zpos = z;
         
         sprite = new Entity(xpos - 1, ypos - 1, zpos, 115, 30, 1, 1, 64, 128);
+        shadow = new Entity(xpos - 1, ypos - 1, zpos, 110, 30, 1, 3, 64, 128);
+        spriteArray = new ArrayList<>();
+        spriteArray.add(shadow);
+        spriteArray.add(sprite);
     }
     
     public void update(float time, Keyboard keys, World w)//time passed in seconds
@@ -95,7 +101,7 @@ public class Player {
         else if(w.getHeight(xpos,dy,zpos) <= (zpos - (int)zpos))
             ypos = dy;
         
-        if(keys.getKey(KeyEvent.VK_SPACE))
+        if(keys.getKeyPressed(KeyEvent.VK_SPACE))
         {
             zvel = jspeed;
         }
@@ -112,13 +118,34 @@ public class Player {
             zpos = (float)Math.floor(zpos + 1);
         }
         
+        
+        sprite.xpos = xpos;
+        sprite.ypos = ypos;
+        sprite.zpos = zpos;
+        shadow.xpos = xpos;
+        shadow.ypos = ypos;
+        shadow.zpos = zpos;
+        
+        boolean flag = true;
+        while(flag)
+        {
+            float h = w.getHeight(xpos, ypos, shadow.zpos - 1);
+            if(h == 1)
+            {
+                shadow.zpos = (int)shadow.zpos;
+                flag = false;
+            }
+            else
+                shadow.zpos = shadow.zpos - 1;
+        }
+        
     }
     
-    public Entity draw()
+    public ArrayList<Entity> draw()
     {
-        sprite.xpos = xpos;// + 1;
-        sprite.ypos = ypos;// - 1;
-        sprite.zpos = zpos;
-        return sprite;
+        
+        
+        
+        return spriteArray;
     }
 }

@@ -6,6 +6,8 @@ package robotgame;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -19,10 +21,14 @@ import javax.imageio.ImageIO;
  *
  * @author George Vorobyev <quaffle97@gmail.com>
  */
-public class World {
+public class World implements UIListener{
     public static final int MODE_PLAY = 0;
     public static final int MODE_EDITOR = 1;
+    public static final int MODE_ASSEMBLE = 2;
     
+    
+    public BufferedImage assembleBG;
+    public ArrayList<UIRegion> ui;
     
     public BufferedImage[] sprites;
     public ArrayList<Entity> entities;
@@ -39,18 +45,55 @@ public class World {
     
     public World(String fileName)
     {
-        mode = MODE_PLAY;
+        mode = MODE_ASSEMBLE;
+        createUI(MODE_ASSEMBLE);
         editTile = new Tile(0,0);
-        String[] input;//holds lines of tile data, each line is one xy slice
         try {
             sprites = new BufferedImage[2];
             sprites[0] = ImageIO.read(new File("tiles.png"));
             sprites[1] = ImageIO.read(new File("entities.png"));
+            assembleBG = ImageIO.read(new File("assemble.png"));
         } catch (IOException ex) {
             Logger.getLogger(World.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         
+        
+        
+        entities = new ArrayList<>();
+        
+    }
+    
+    private void createUI(int mode)
+    {
+        switch(mode)
+        {
+            case MODE_ASSEMBLE:
+                ui = new ArrayList<>();
+                Color[] colors = new Color[3];
+                colors[0] = new Color(0, 0, 0, 0);
+                colors[1] = new Color(255, 255, 255, 128);
+                colors[2] = new Color(0, 0, 0, 128);
+                
+                ui.add(new UIRegion(new Rectangle(175,125,40,40),0,colors.clone(),this));
+                ui.add(new UIRegion(new Rectangle(100,200,40,40),1,colors.clone(),this));
+                ui.add(new UIRegion(new Rectangle(175,200,40,40),2,colors.clone(),this));
+                ui.add(new UIRegion(new Rectangle(250,200,40,40),3,colors.clone(),this));
+                ui.add(new UIRegion(new Rectangle(100,275,40,40),4,colors.clone(),this));
+                ui.add(new UIRegion(new Rectangle(175,275,40,40),5,colors.clone(),this));
+                ui.add(new UIRegion(new Rectangle(250,275,40,40),6,colors.clone(),this));
+                
+                colors[1] = new Color(128,255,128,128);
+                colors[2] = new Color(60,200,60,160);
+                
+                ui.add(new UIRegion(new Rectangle(61,435,120,42),7,colors.clone(),this));
+                break;
+        }
+    }
+    
+    private void loadLevel(String fileName)
+    {
+        String[] input;//holds lines of tile data, each line is one xy slice
         BufferedReader b = null;
         try {
             File f = new File(fileName);
@@ -90,11 +133,8 @@ public class World {
             }
         }
         
-        entities = new ArrayList<>();
         player = new Player(2.5f, 2.5f, 1);
-        
     }
-    
     
     private void parseTiles(String[] input)
     {
@@ -128,7 +168,7 @@ public class World {
         }
     }
     
-    public void update(float time, Keyboard keys)//per-frame game updates
+    public void update(float time, Keyboard keys, Mouse m)//per-frame game updates
     {
         if(mode == MODE_PLAY)
         {
@@ -182,6 +222,15 @@ public class World {
             if(keys.getKey(KeyEvent.VK_ESCAPE))
                 mode = MODE_PLAY;
         }
+        
+        else if(mode == MODE_ASSEMBLE)
+        {
+            Iterator<UIRegion> i = ui.iterator();
+            while(i.hasNext())
+            {
+                i.next().update(m);
+            }
+        }
     }
     
     
@@ -192,10 +241,11 @@ public class World {
         entities = new ArrayList<Entity>();
         if(mode == MODE_PLAY)
         {
-            Entity temp = player.draw();
-            entities.add(temp);
-            int xcor = (int)(temp.refx + 16 * temp.xpos + 16 * temp.ypos);
-            int ycor = (int)(temp.refy + (8 * temp.xpos) + (-8 * temp.ypos) + (-16 * temp.zpos));
+            ArrayList<Entity> temp = player.draw();
+            entities.addAll(temp);
+            Entity playersprite = temp.get(1);
+            int xcor = (int)(playersprite.refx + 16 * playersprite.xpos + 16 * playersprite.ypos);
+            int ycor = (int)(playersprite.refy + (8 * playersprite.xpos) + (-8 * playersprite.ypos) + (-16 * playersprite.zpos));
             viewX = 250 - xcor; 
             viewY = 250 - ycor;
         }
@@ -207,36 +257,39 @@ public class World {
         }
         
         
-        int staggerHeight = xyz[0] + xyz[1] - 1;
-        int x = 0;
-        int y = xyz[1] - 1;
-        for(int i = 1; i <= staggerHeight;i++)
+        if(mode == MODE_EDITOR || mode == MODE_PLAY)
         {
-            int diff = staggerHeight-i + 1;
-            int staggerWidth = diff>=i?i:diff;
-            for(int j = 0; j < staggerWidth;j++)
+            int staggerHeight = xyz[0] + xyz[1] - 1;
+            int x = 0;
+            int y = xyz[1] - 1;
+            for(int i = 1; i <= staggerHeight;i++)
             {
-                for(int z = 0; z < xyz[2];z++)
+                int diff = staggerHeight-i + 1;
+                int staggerWidth = diff>=i?i:diff;
+                for(int j = 0; j < staggerWidth;j++)
                 {
-                    int ax = x + j;
-                    int ay = y + j; 
-                    //Misc.prln(String.valueOf(ax) + ' ' + String.valueOf(ay));
+                    for(int z = 0; z < xyz[2];z++)
+                    {
+                        int ax = x + j;
+                        int ay = y + j; 
+                        //Misc.prln(String.valueOf(ax) + ' ' + String.valueOf(ay));
 
-                    int xcor = viewX + 0 + 16 * ax + 16 * ay;
-                    int ycor = viewY + -55 + (8 * ax) + (-8 * ay) + (-16 * z);
-                    int tileSprite = tiles[ax][ay][z].sprite;
-                    g.drawImage(sprites[0],  xcor, ycor, xcor + 32, ycor + 64,tileSprite * 32, 0, tileSprite * 32 + 32, 64, null);
+                        int xcor = viewX + 0 + 16 * ax + 16 * ay;
+                        int ycor = viewY + -55 + (8 * ax) + (-8 * ay) + (-16 * z);
+                        int tileSprite = tiles[ax][ay][z].sprite;
+                        g.drawImage(sprites[0],  xcor, ycor, xcor + 32, ycor + 64,tileSprite * 32, 0, tileSprite * 32 + 32, 64, null);
+                    }
+
                 }
 
+                drawEntities( x - y,g);//draws all entities at z-level z, x-y defines the depth so it occludes each other
+
+                if(y > 0)
+                    y--;
+                else
+                    x++;
+
             }
-
-            drawEntities( x - y,g);//draws all entities at z-level z, x-y defines the depth so it occludes each other
-
-            if(y > 0)
-                y--;
-            else
-                x++;
-
         }
         
         if(mode == MODE_EDITOR)
@@ -246,6 +299,18 @@ public class World {
             g.drawString("X,Y,Z: " + String.valueOf(editx) + ", " + String.valueOf(edity) + ", " + String.valueOf(editz), 0, 10);
             g.drawString("Tile Sprite/Type: " + String.valueOf(editTile.sprite) + ", " + String.valueOf(editTile.type), 0, 20);
         }
+        
+        
+        if(mode == MODE_ASSEMBLE)
+        {
+            g.drawImage(assembleBG, 0, 0, null);
+            Iterator<UIRegion> i = ui.iterator();
+            while(i.hasNext())
+            {
+                i.next().draw(g);
+            }
+        }
+        
     }
     
     private void drawEntities(int camDistance, Graphics2D g)//camdistance is the distance from the top-left of the grid, given by x - y
@@ -264,6 +329,22 @@ public class World {
                 g.drawImage(sprites[current.spritesheet],  xcor, ycor, xcor + current.spriteWidth, ycor + current.spriteHeight, tileCor, 0, tileCor + current.spriteWidth, current.spriteHeight, null);
                 
             }
+        }
+    }
+    
+    public void informClicked(int i)
+    {
+        switch(mode)
+        {
+            case MODE_ASSEMBLE:
+                switch(i)
+                {
+                    case 7:
+                        mode = MODE_PLAY;
+                        loadLevel("test.lvl");
+                        break;
+                }
+                break;
         }
     }
     
